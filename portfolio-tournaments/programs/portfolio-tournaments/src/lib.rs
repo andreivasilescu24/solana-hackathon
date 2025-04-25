@@ -25,6 +25,10 @@ pub mod portfolio_tournaments {
     pub fn register_user(ctx: Context<RegisterUser>) -> Result<()> {
         register_user::handler(ctx)
     }
+
+    pub fn finalize_tournament(ctx: Context<FinalizeTournament>, winner: Pubkey) -> Result<()> {
+        finalize_tournament::handler(ctx, winner)
+    }
 }
 
 #[derive(Accounts)]
