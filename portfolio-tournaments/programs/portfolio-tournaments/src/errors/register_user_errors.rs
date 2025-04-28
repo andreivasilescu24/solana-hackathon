@@ -6,4 +6,6 @@ pub enum RegisterUserError {
     RegistrationClosed,
     #[msg("Portfolio weights must sum to 100.")]
     InvalidPortfolio,
+    #[msg("Didn't send money to the vault.")]
+    VaultTransferFailed,
 }

@@ -1,4 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::{program::invoke_signed, system_instruction}};
+use anchor_lang::{prelude::*, system_program::{transfer, Transfer}};
 
 use crate::{errors::FinalizeTournamentError, state::{tournament::Tournament, tournament_vault::TournamentVault}};
 
@@ -34,20 +34,6 @@ pub fn handler(ctx: Context<FinalizeTournament>, winner: Pubkey) -> Result<()> {
         ctx.accounts.winner.key() == winner,
         FinalizeTournamentError::InvalidWinnerAccount
     );
-
-    let prize = tournament.prize_pool * 97 / 100;
-
-    let tournament_pubkey = tournament.key();
-
-    let vault_seeds = &[
-        b"vault".as_ref(),
-        tournament_pubkey.as_ref(),
-        &[ctx.bumps.vault],
-    ];
-
-    invoke_signed(&system_instruction::transfer(&vault.key(), &winner, prize), 
-    &[vault.to_account_info(), ctx.accounts.winner.to_account_info(), ctx.accounts.system_program.to_account_info()], 
-    &[vault_seeds])?;
     
     // Set the winner
     tournament.winner = Some(winner);

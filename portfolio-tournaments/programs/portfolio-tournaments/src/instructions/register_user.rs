@@ -4,9 +4,12 @@ use anchor_lang::{
 };
 
 use crate::{
+    accounts,
     errors::RegisterUserError,
     state::{
-        tournament::Tournament, tournament_vault::TournamentVault, user_portfolio::UserPortfolio,
+        tournament::Tournament,
+        tournament_vault::TournamentVault,
+        user_portfolio::{TokenAllocation, UserPortfolio},
     },
 };
 
@@ -34,7 +37,7 @@ pub struct RegisterUser<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<RegisterUser>) -> Result<()> {
+pub fn handler(ctx: Context<RegisterUser>, weights: Vec<TokenAllocation>) -> Result<()> {
     let tournament = &mut ctx.accounts.tournament;
     let user = &ctx.accounts.user;
 
@@ -45,10 +48,8 @@ pub fn handler(ctx: Context<RegisterUser>) -> Result<()> {
         RegisterUserError::RegistrationClosed
     );
 
-    let user_token_weights = &ctx.accounts.user_portfolio.weights;
-
     // Validate portfolio weights
-    let total_weight: u8 = user_token_weights.iter().map(|w| w.weight).sum();
+    let total_weight: u8 = weights.iter().map(|w| w.weight).sum();
     require!(total_weight == 100, RegisterUserError::InvalidPortfolio);
 
     // Transfer entry fee from user to vault
@@ -60,12 +61,13 @@ pub fn handler(ctx: Context<RegisterUser>) -> Result<()> {
     };
 
     let cpi_context = CpiContext::new(ctx.accounts.system_program.to_account_info(), cpi_accounts);
-    system_program::transfer(cpi_context, register_fee)?;
+    system_program::transfer(cpi_context, register_fee)
+        .map_err(|_| error!(RegisterUserError::VaultTransferFailed))?;
 
     ctx.accounts.user_portfolio.set_inner(UserPortfolio {
         user: user.key(),
         tournament: tournament.key(),
-        weights: user_token_weights.clone(),
+        weights: weights,
     });
 
     // Update prize pool

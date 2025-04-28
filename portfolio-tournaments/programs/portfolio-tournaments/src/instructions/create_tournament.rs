@@ -31,10 +31,10 @@ pub struct CreateTournament<'info> {
 
 pub fn handler(
     ctx: Context<CreateTournament>,
+    id: u64,
     entry_fee: u64,
     start_time: u64,
     end_time: u64,
-    id: u64,
 ) -> Result<()> {
     
     require!(start_time < end_time, CreateTournamentError::StartTimeMustBeLessThanEndTime);
@@ -46,7 +46,8 @@ pub fn handler(
         start_time: start_time, 
         end_time: end_time, 
         prize_pool: 0, 
-        is_finalized: false, 
+        is_finalized: false,
+        is_claimed: false,
         winner: None 
     });
 

@@ -10,5 +10,6 @@ pub struct Tournament {
     pub end_time: u64,
     pub prize_pool: u64, // Total prize pool in lamports
     pub is_finalized: bool,
+    pub is_claimed: bool,
     pub winner: Option<Pubkey>,
 }
