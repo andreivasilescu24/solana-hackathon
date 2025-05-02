@@ -4,4 +4,6 @@ use anchor_lang::prelude::*;
 pub enum CreateTournamentError {
     #[msg("Start time must be before end time of the tournament")]
     StartTimeMustBeLessThanEndTime,
+    #[msg("A torunament needs at least 2 users")]
+    TournamentNeedsAtLeastTwoUsers,
 }
