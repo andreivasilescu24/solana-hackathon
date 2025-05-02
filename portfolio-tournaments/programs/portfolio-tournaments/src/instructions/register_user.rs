@@ -5,7 +5,7 @@ use anchor_lang::{
 
 use crate::{
     accounts,
-    errors::RegisterUserError,
+    errors::{FinalizeTournamentError, RegisterUserError},
     state::{
         tournament::Tournament,
         tournament_vault::TournamentVault,
@@ -26,7 +26,7 @@ pub struct RegisterUser<'info> {
         seeds = [b"user_portfolio".as_ref(), tournament.key().as_ref(), user.key().as_ref()],
         bump,
     )]
-    pub user_portfolio: Account<'info, UserPortfolio>,
+    pub user_portfolio: Account<'info, UserPortfolio>, // fail if user already registered
 
     #[account(
         mut,
@@ -41,11 +41,26 @@ pub fn handler(ctx: Context<RegisterUser>, weights: Vec<TokenAllocation>) -> Res
     let tournament = &mut ctx.accounts.tournament;
     let user = &ctx.accounts.user;
 
+    require!(
+        !tournament.is_finalized,
+        FinalizeTournamentError::AlreadyFinalized
+    );
+
     // Check time window
     let now = Clock::get()?.unix_timestamp as u64;
     require!(
         now < tournament.start_time,
         RegisterUserError::RegistrationClosed
+    );
+
+    require!(
+        tournament.current_users < tournament.max_users,
+        RegisterUserError::MaxUsersReached
+    );
+
+    require!(
+        weights.len() <= tournament.max_tokens_per_user as usize,
+        RegisterUserError::MaxTokensExceeded
     );
 
     // Validate portfolio weights
@@ -72,6 +87,7 @@ pub fn handler(ctx: Context<RegisterUser>, weights: Vec<TokenAllocation>) -> Res
 
     // Update prize pool
     tournament.prize_pool += register_fee;
+    tournament.current_users += 1;
 
     msg!("{} registered for tournament {}", user.key(), tournament.id);
 
