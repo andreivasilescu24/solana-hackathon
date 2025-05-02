@@ -8,4 +8,6 @@ pub enum FinalizeTournamentError {
     AlreadyFinalized,
     #[msg("Winner pubkey does not match the provided winner account.")]
     InvalidWinnerAccount,
+    #[msg("You are not the tournament authority.")]
+    NotTournamentAuthority,
 }

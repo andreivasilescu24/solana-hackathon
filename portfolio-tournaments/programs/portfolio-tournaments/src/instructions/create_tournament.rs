@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
-use crate::state::{tournament::Tournament, tournament_vault::TournamentVault};
-use crate::errors::CreateTournamentError;
+use crate::state::{tournament::Tournament, tournament_vault::TournamentVault, TokenAllocation, UserPortfolio};
+use crate::errors::{CreateTournamentError, RegisterUserError};
 
 
 #[derive(Accounts)]
@@ -26,6 +26,15 @@ pub struct CreateTournament<'info> {
         bump,
     )]
     pub vault: Account<'info, TournamentVault>,
+
+    #[account(
+        init,
+        payer = creator,
+        space = 8 + UserPortfolio::INIT_SPACE,
+        seeds = [b"user_portfolio".as_ref(), tournament.key().as_ref(), creator.key().as_ref()],
+        bump,
+    )]
+    pub creator_portfolio: Account<'info, UserPortfolio>,
     pub system_program: Program<'info, System>,
 }
 
@@ -35,24 +44,65 @@ pub fn handler(
     entry_fee: u64,
     start_time: u64,
     end_time: u64,
+    max_tokens_per_user: u8,
+    max_users: u8,
+    creator_weights: Vec<TokenAllocation>,
 ) -> Result<()> {
-    
-    require!(start_time < end_time, CreateTournamentError::StartTimeMustBeLessThanEndTime);
-    
-    ctx.accounts.tournament.set_inner(Tournament { 
-        id: id, 
-        creator: ctx.accounts.creator.key(), 
-        entry_fee: entry_fee, 
-        start_time: start_time, 
-        end_time: end_time, 
-        prize_pool: 0, 
+    require!(
+        start_time < end_time,
+        CreateTournamentError::StartTimeMustBeLessThanEndTime
+    );
+
+    let tournament = &mut ctx.accounts.tournament;
+    let vault = &mut ctx.accounts.vault;
+    let user_portfolio = &mut ctx.accounts.creator_portfolio;
+    let creator = &ctx.accounts.creator;
+
+    require!(creator_weights.len() <= max_tokens_per_user as usize, RegisterUserError::MaxTokensExceeded);
+
+    require!(max_users >= 2, CreateTournamentError::TournamentNeedsAtLeastTwoUsers);
+
+    let total_weight: u8 = creator_weights.iter().map(|w| w.weight).sum();
+    require!(
+        total_weight == 100,
+        RegisterUserError::InvalidPortfolio
+    );
+
+    tournament.set_inner(Tournament {
+        id,
+        creator: creator.key(),
+        entry_fee,
+        start_time,
+        end_time,
+        prize_pool: 0,
         is_finalized: false,
         is_claimed: false,
-        winner: None 
+        winner: None,
+        max_tokens_per_user: max_tokens_per_user,
+        max_users: max_users,
+        current_users: 1,
     });
 
 
-    msg!("Tournament created with ID: {}", id);
+    // Save creator's portfolio
+    user_portfolio.set_inner(UserPortfolio {
+        user: creator.key(),
+        tournament: tournament.key(),
+        weights: creator_weights,
+    });
+
+    // Transfer entry fee from creator to vault
+    let cpi_accounts = anchor_lang::system_program::Transfer {
+        from: creator.to_account_info(),
+        to: vault.to_account_info(),
+    };
+    let cpi_context = CpiContext::new(ctx.accounts.system_program.to_account_info(), cpi_accounts);
+    anchor_lang::system_program::transfer(cpi_context, entry_fee)?;
+
+    // Update tournament prize pool
+    tournament.prize_pool += entry_fee;
+
+    msg!("Tournament created with ID: {} and creator registered!", id);
 
     Ok(())
 }
