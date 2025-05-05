@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
-import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import { PortfolioTournaments } from "../types/portfolio-tournaments";
+import { Program } from "@coral-xyz/anchor";
+import { PortfolioTournaments } from "./portfolio-tournaments";
 
 export interface ProgramWallet {
   publicKey: PublicKey;

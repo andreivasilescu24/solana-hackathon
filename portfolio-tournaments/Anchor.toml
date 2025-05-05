@@ -12,7 +12,7 @@ portfolio_tournaments = "7xaAXMNqwo3wCmTawLKchSbwZJchTkcnFxb1nLHnbg4u"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "https://api.devnet.solana.com/"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

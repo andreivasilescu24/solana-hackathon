@@ -1,19 +1,23 @@
 import { Router } from "express";
 import {
-  getTournaments,
   createTournament,
   registerForTournament,
+  finalizeTournament,
+  claimPrize,
 } from "../controllers/tournament.controller";
 
 const router = Router();
-
-// Get all tournaments
-router.get("/", getTournaments);
 
 // Create a new tournament
 router.post("/create", createTournament);
 
 // Register for a tournament
 router.post("/register", registerForTournament);
+
+// Finalize a tournament
+router.post("/finalize", finalizeTournament);
+
+// Claim tournament prize
+router.post("/claim-prize", claimPrize);
 
 export default router;

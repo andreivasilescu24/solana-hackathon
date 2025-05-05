@@ -1,11 +1,16 @@
+import { PublicKey } from "@solana/web3.js";
+
 export interface TokenAllocation {
-  tokenMint: string;
-  percentage: number;
+  mint: PublicKey;
+  weight: number;
 }
 
 export interface Portfolio {
   userAddress: string;
-  tokenAllocations: TokenAllocation[];
+  tokenAllocations: {
+    mint: string;
+    weight: number;
+  }[];
 }
 
 export interface CreateTournamentDto {

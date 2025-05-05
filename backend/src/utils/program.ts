@@ -1,7 +1,7 @@
 import { Program, AnchorProvider, setProvider } from "@coral-xyz/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { ProgramWallet } from "../types/program";
-import IDL from "../idl/portfolio-tournaments.json";
+import IDL from "../portofolio_tournaments.json";
 
 export const PROGRAM_ID = new PublicKey(
   "7xaAXMNqwo3wCmTawLKchSbwZJchTkcnFxb1nLHnbg4u"

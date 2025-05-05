@@ -1,49 +1,70 @@
 import { Request, Response } from "express";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, SystemProgram, Keypair } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
+import { getProgram } from "../utils/program";
 import {
   CreateTournamentDto,
   RegisterTournamentDto,
   Tournament,
+  TokenAllocation,
 } from "../types/tournament.types";
 
-// Initialize connection and program ID
-const connection = new Connection(
-  process.env.SOLANA_RPC_URL || "http://localhost:8899"
-);
+// Helper function to get creator keypair from environment
+const getCreatorKeypair = (): Keypair => {
+  if (!process.env.SECRET_KEY) {
+    throw new Error("SECRET_KEY not found in environment variables");
+  }
 
-// Using the program ID from portfolio-tournaments
-const PROGRAM_ID = new PublicKey(
-  "7xaAXMNqwo3wCmTawLKchSbwZJchTkcnFxb1nLHnbg4u"
-);
+  // Convert string of numbers to Uint8Array
+  const secretKey = Uint8Array.from(
+    process.env.SECRET_KEY.split(",").map((num) => parseInt(num))
+  );
+
+  return Keypair.fromSecretKey(secretKey);
+};
+
+// Helper function to find platform authority PDA
+const findPlatformAuthorityPDA = (
+  programId: PublicKey
+): [PublicKey, number] => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("platform-authority")],
+    programId
+  );
+};
 
 // Helper function to find tournament PDA
 const findTournamentPDA = (
   creator: PublicKey,
-  id: number
+  id: anchor.BN,
+  programId: PublicKey
 ): [PublicKey, number] => {
   return PublicKey.findProgramAddressSync(
     [
       Buffer.from("tournament"),
       creator.toBuffer(),
-      new Uint8Array(new anchor.BN(id).toArray("le", 8)),
+      id.toArrayLike(Buffer, "le", 8),
     ],
-    PROGRAM_ID
+    programId
   );
 };
 
 // Helper function to find vault PDA
-const findVaultPDA = (tournamentPDA: PublicKey): [PublicKey, number] => {
+const findVaultPDA = (
+  tournamentPDA: PublicKey,
+  programId: PublicKey
+): [PublicKey, number] => {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("vault"), tournamentPDA.toBuffer()],
-    PROGRAM_ID
+    programId
   );
 };
 
 // Helper function to find user portfolio PDA
 const findUserPortfolioPDA = (
   tournamentPDA: PublicKey,
-  userPubkey: PublicKey
+  userPubkey: PublicKey,
+  programId: PublicKey
 ): [PublicKey, number] => {
   return PublicKey.findProgramAddressSync(
     [
@@ -51,64 +72,218 @@ const findUserPortfolioPDA = (
       tournamentPDA.toBuffer(),
       userPubkey.toBuffer(),
     ],
-    PROGRAM_ID
+    programId
   );
 };
 
-export const getTournaments = async (req: Request, res: Response) => {
+export const initializePlatform = async (req: Request, res: Response) => {
   try {
-    // TODO: Implement fetching tournaments from the program
-    // This will require either:
-    // 1. Maintaining a separate database of tournament IDs
-    // 2. Using getProgramAccounts to fetch all tournament accounts
-    const tournaments: Tournament[] = [];
-    res.json(tournaments);
+    const creatorKeypair = getCreatorKeypair();
+
+    const connection = new Connection(
+      process.env.SOLANA_RPC_URL || "http://localhost:8899",
+      "confirmed"
+    );
+
+    // Create wallet interface from keypair
+    const wallet = {
+      publicKey: creatorKeypair.publicKey,
+      signTransaction: (tx: any) =>
+        Promise.resolve(tx.partialSign(creatorKeypair)),
+      signAllTransactions: (txs: any[]) =>
+        Promise.all(
+          txs.map((tx) => {
+            tx.partialSign(creatorKeypair);
+            return Promise.resolve(tx);
+          })
+        ),
+    };
+
+    const program = getProgram(connection, wallet);
+    const [platformAuthorityPDA] = findPlatformAuthorityPDA(program.programId);
+
+    const tx = await program.methods
+      .initPlatform()
+      .accountsPartial({
+        platformAuthority: platformAuthorityPDA,
+        authority: creatorKeypair.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    res.status(201).json({
+      message: "Platform initialized successfully",
+      platformAuthorityPDA: platformAuthorityPDA.toString(),
+      transactionId: tx,
+    });
   } catch (error) {
-    console.error("Error fetching tournaments:", error);
-    res.status(500).json({ error: "Failed to fetch tournaments" });
+    console.error("Error initializing platform:", error);
+    res.status(500).json({ error: "Failed to initialize platform" });
   }
 };
 
 export const createTournament = async (req: Request, res: Response) => {
   try {
+    console.log("1. Request body:", JSON.stringify(req.body, null, 2));
     const tournamentData: CreateTournamentDto = req.body;
 
+    // Convert timestamps to milliseconds if they're in seconds
+    const startTimestamp =
+      tournamentData.startTimestamp < 1e10
+        ? tournamentData.startTimestamp * 1000
+        : tournamentData.startTimestamp;
+
+    const endTimestamp =
+      tournamentData.endTimestamp < 1e10
+        ? tournamentData.endTimestamp * 1000
+        : tournamentData.endTimestamp;
+
     // Validate tournament data
-    if (tournamentData.startTimestamp <= Date.now()) {
+    if (startTimestamp <= Date.now()) {
       return res
         .status(400)
         .json({ error: "Start timestamp must be in the future" });
     }
 
-    if (tournamentData.endTimestamp <= tournamentData.startTimestamp) {
+    if (endTimestamp <= startTimestamp) {
       return res
         .status(400)
         .json({ error: "End timestamp must be after start timestamp" });
     }
 
-    // Get the creator's public key from the request
-    // This should come from your authentication middleware
-    const creatorPubkey = new PublicKey(
-      tournamentData.creatorPortfolio.userAddress
+    // Convert timestamps to BN
+    const id = new anchor.BN(Date.now()); // Unique ID for the tournament
+    const entryFee = new anchor.BN(tournamentData.entryFee);
+    const startTime = new anchor.BN(Math.floor(startTimestamp / 1000));
+    const endTime = new anchor.BN(Math.floor(endTimestamp / 1000));
+
+    console.log("2. Converted values:", {
+      id: id.toString(),
+      entryFee: entryFee.toString(),
+      startTime: startTime.toString(),
+      endTime: endTime.toString(),
+      maxTokensPerPortfolio: tournamentData.maxTokensPerPortfolio,
+      maxUsers: tournamentData.maxUsers,
+    });
+
+    const creatorKeypair = getCreatorKeypair();
+    console.log("3. Creator public key:", creatorKeypair.publicKey.toString());
+
+    const connection = new Connection(
+      process.env.SOLANA_RPC_URL || "http://localhost:8899",
+      "confirmed"
     );
 
-    // Generate a unique tournament ID (you might want to implement a better system)
-    const tournamentId = Date.now();
+    // Create wallet interface from keypair
+    const wallet = {
+      publicKey: creatorKeypair.publicKey,
+      signTransaction: (tx: any) =>
+        Promise.resolve(tx.partialSign(creatorKeypair)),
+      signAllTransactions: (txs: any[]) =>
+        Promise.all(
+          txs.map((tx) => {
+            tx.partialSign(creatorKeypair);
+            return Promise.resolve(tx);
+          })
+        ),
+    };
+
+    const program = getProgram(connection, wallet);
+    console.log("4. Program ID:", program.programId.toString());
 
     // Find PDAs
-    const [tournamentPDA] = findTournamentPDA(creatorPubkey, tournamentId);
-    const [vaultPDA] = findVaultPDA(tournamentPDA);
+    const [platformAuthorityPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("platform-authority")],
+      program.programId
+    );
 
-    // TODO: Call the program's create_tournament instruction
-    // This will require:
-    // 1. Setting up the program provider
-    // 2. Creating the transaction
-    // 3. Getting the creator's signature
+    // Initialize platform if not already initialized
+    try {
+      await program.methods
+        .initPlatform()
+        .accountsPartial({
+          platformAuthority: platformAuthorityPDA,
+          authority: creatorKeypair.publicKey,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+      console.log("Platform initialized");
+    } catch (error) {
+      console.log("Platform already initialized or error:", error);
+      // Continue even if platform is already initialized
+    }
+
+    const [tournamentPDA] = findTournamentPDA(
+      creatorKeypair.publicKey,
+      id,
+      program.programId
+    );
+    const [vaultPDA] = findVaultPDA(tournamentPDA, program.programId);
+    const [creatorPortfolioPDA] = findUserPortfolioPDA(
+      tournamentPDA,
+      creatorKeypair.publicKey,
+      program.programId
+    );
+
+    console.log("5. PDAs:", {
+      tournamentPDA: tournamentPDA.toString(),
+      vaultPDA: vaultPDA.toString(),
+      creatorPortfolioPDA: creatorPortfolioPDA.toString(),
+    });
+
+    // Convert portfolio weights
+    const weights = tournamentData.creatorPortfolio.tokenAllocations.map(
+      (allocation): TokenAllocation => ({
+        mint: new PublicKey(allocation.mint),
+        weight: allocation.weight,
+      })
+    );
+
+    console.log(
+      "6. Portfolio weights:",
+      weights.map((w) => ({
+        mint: w.mint.toString(),
+        weight: w.weight,
+      }))
+    );
+
+    // Create tournament
+    console.log("7. Creating tournament with accounts:", {
+      creator: creatorKeypair.publicKey.toString(),
+      tournament: tournamentPDA.toString(),
+      vault: vaultPDA.toString(),
+      creatorPortfolio: creatorPortfolioPDA.toString(),
+      systemProgram: SystemProgram.programId.toString(),
+    });
+
+    const tx = await program.methods
+      .createTournament(
+        id,
+        entryFee,
+        startTime,
+        endTime,
+        tournamentData.maxTokensPerPortfolio,
+        tournamentData.maxUsers,
+        weights
+      )
+      .accounts({
+        creator: creatorKeypair.publicKey,
+        tournament: tournamentPDA,
+        vault: vaultPDA,
+        creatorPortfolio: creatorPortfolioPDA,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([creatorKeypair])
+      .rpc();
+
+    console.log("8. Transaction successful:", tx);
 
     res.status(201).json({
       message: "Tournament created successfully",
       tournamentPDA: tournamentPDA.toString(),
       vaultPDA: vaultPDA.toString(),
+      creatorPortfolioPDA: creatorPortfolioPDA.toString(),
+      transactionId: tx,
     });
   } catch (error) {
     console.error("Error creating tournament:", error);
@@ -120,24 +295,52 @@ export const registerForTournament = async (req: Request, res: Response) => {
   try {
     const registrationData: RegisterTournamentDto = req.body;
 
-    // Convert string addresses to PublicKeys
+    // Convert addresses to PublicKeys
     const userPubkey = new PublicKey(registrationData.userAddress);
     const tournamentPDA = new PublicKey(registrationData.tournamentPdaAddress);
 
-    // Find PDAs
-    const [userPortfolioPDA] = findUserPortfolioPDA(tournamentPDA, userPubkey);
-    const [vaultPDA] = findVaultPDA(tournamentPDA);
+    const connection = new Connection(
+      process.env.SOLANA_RPC_URL || "http://localhost:8899"
+    );
+    const program = getProgram(connection, {
+      publicKey: userPubkey,
+      signTransaction: req.body.signTransaction,
+      signAllTransactions: req.body.signAllTransactions,
+    });
 
-    // TODO: Call the program's register_user instruction
-    // This will require:
-    // 1. Setting up the program provider
-    // 2. Creating the transaction with the correct accounts
-    // 3. Getting the user's signature
+    // Find PDAs
+    const [userPortfolioPDA] = findUserPortfolioPDA(
+      tournamentPDA,
+      userPubkey,
+      program.programId
+    );
+    const [vaultPDA] = findVaultPDA(tournamentPDA, program.programId);
+
+    // Convert portfolio weights
+    const weights = registrationData.portfolio.tokenAllocations.map(
+      (allocation): TokenAllocation => ({
+        mint: new PublicKey(allocation.mint),
+        weight: allocation.weight,
+      })
+    );
+
+    // Register user
+    const tx = await program.methods
+      .registerUser(weights)
+      .accountsPartial({
+        user: userPubkey,
+        tournament: tournamentPDA,
+        userPortfolio: userPortfolioPDA,
+        vault: vaultPDA,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
 
     res.json({
       message: "Successfully registered for tournament",
       userPortfolioPDA: userPortfolioPDA.toString(),
       vaultPDA: vaultPDA.toString(),
+      transactionId: tx,
     });
   } catch (error) {
     console.error("Error registering for tournament:", error);
@@ -145,18 +348,93 @@ export const registerForTournament = async (req: Request, res: Response) => {
   }
 };
 
-export const finalizeTournament = async (tournamentPdaAddress: string) => {
+export const finalizeTournament = async (req: Request, res: Response) => {
   try {
+    const { tournamentPdaAddress, winnerAddress } = req.body;
+
+    const creatorKeypair = getCreatorKeypair();
     const tournamentPDA = new PublicKey(tournamentPdaAddress);
-    const [vaultPDA] = findVaultPDA(tournamentPDA);
+    const winnerPubkey = new PublicKey(winnerAddress);
 
-    // TODO: Implement PNL calculation logic
-    // TODO: Call the program's finalize_tournament instruction with the winner
+    const connection = new Connection(
+      process.env.SOLANA_RPC_URL || "http://localhost:8899"
+    );
 
-    console.log(`Tournament ${tournamentPdaAddress} finalized successfully`);
-    return true;
+    // Create wallet interface from keypair
+    const wallet = {
+      publicKey: creatorKeypair.publicKey,
+      signTransaction: (tx: any) =>
+        Promise.resolve(tx.partialSign(creatorKeypair)),
+      signAllTransactions: (txs: any[]) =>
+        Promise.all(
+          txs.map((tx) => {
+            tx.partialSign(creatorKeypair);
+            return Promise.resolve(tx);
+          })
+        ),
+    };
+
+    const program = getProgram(connection, wallet);
+
+    const [vaultPDA] = findVaultPDA(tournamentPDA, program.programId);
+
+    // Finalize tournament
+    const tx = await program.methods
+      .finalizeTournament(winnerPubkey)
+      .accountsPartial({
+        tournament: tournamentPDA,
+        creator: creatorKeypair.publicKey,
+        vault: vaultPDA,
+        winner: winnerPubkey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    res.json({
+      message: "Tournament finalized successfully",
+      transactionId: tx,
+    });
   } catch (error) {
     console.error("Error finalizing tournament:", error);
-    return false;
+    res.status(500).json({ error: "Failed to finalize tournament" });
+  }
+};
+
+export const claimPrize = async (req: Request, res: Response) => {
+  try {
+    const { tournamentPdaAddress, winnerAddress } = req.body;
+
+    const tournamentPDA = new PublicKey(tournamentPdaAddress);
+    const winnerPubkey = new PublicKey(winnerAddress);
+
+    const connection = new Connection(
+      process.env.SOLANA_RPC_URL || "http://localhost:8899"
+    );
+    const program = getProgram(connection, {
+      publicKey: winnerPubkey,
+      signTransaction: req.body.signTransaction,
+      signAllTransactions: req.body.signAllTransactions,
+    });
+
+    const [vaultPDA] = findVaultPDA(tournamentPDA, program.programId);
+
+    // Claim prize
+    const tx = await program.methods
+      .claimPrize()
+      .accountsPartial({
+        winner: winnerPubkey,
+        tournament: tournamentPDA,
+        vault: vaultPDA,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    res.json({
+      message: "Prize claimed successfully",
+      transactionId: tx,
+    });
+  } catch (error) {
+    console.error("Error claiming prize:", error);
+    res.status(500).json({ error: "Failed to claim prize" });
   }
 };
