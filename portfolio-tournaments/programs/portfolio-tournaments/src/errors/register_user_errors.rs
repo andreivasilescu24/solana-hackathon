@@ -8,4 +8,8 @@ pub enum RegisterUserError {
     InvalidPortfolio,
     #[msg("Didn't send money to the vault.")]
     VaultTransferFailed,
+    #[msg("Max tokens per user portfolio exceeded.")]
+    MaxTokensExceeded,
+    #[msg("Max users in tournament exceeded.")]
+    MaxUsersReached,
 }
