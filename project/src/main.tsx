@@ -4,8 +4,6 @@ import { PrivyProvider } from "@privy-io/react-auth";
 import App from "./App.tsx";
 import "./index.css";
 
-// Get your app ID from the Privy Dashboard: https://console.privy.io/
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <PrivyProvider
@@ -15,14 +13,16 @@ createRoot(document.getElementById("root")!).render(
         loginMethods: ["email", "twitter", "wallet"],
         appearance: {
           theme: "dark",
-          accentColor: "#7C3AED", // primary-600
+          accentColor: "#7C3AED",
           logo: "/logo.svg",
           showWalletLoginFirst: false,
-          defaultLanguage: "en",
         },
         embeddedWallets: {
-          createOnLogin: true,
+          createOnLogin: "all-users",
+          noPromptOnSignature: true,
         },
+        defaultChain: 1,
+        supportedChains: [1],
       }}
     >
       <App />

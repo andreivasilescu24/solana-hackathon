@@ -139,24 +139,28 @@ const CreateTournament: React.FC = () => {
 
   return (
     <div className="container py-8 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Create Tournament</h1>
+      <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-secondary-400 to-primary-400 text-transparent bg-clip-text">
+        Create Tournament
+      </h1>
 
       {error && (
-        <div className="bg-error-100 text-error-700 p-4 rounded-md mb-6">
+        <div className="bg-error-400/10 text-error-400 p-4 rounded-md mb-6 border border-error-400/30">
           {error}
         </div>
       )}
 
-      <div className="card p-6 mb-8">
+      <div className="bg-dark-200 border border-dark-100 rounded-xl p-6 mb-8 shadow-lg">
         {step === 1 ? (
           <form>
-            <h2 className="text-xl font-semibold mb-4">Tournament Details</h2>
+            <h2 className="text-xl font-semibold mb-4 text-light-100 bg-gradient-to-r from-secondary-400 to-primary-400 text-transparent bg-clip-text">
+              Tournament Details
+            </h2>
 
             <div className="space-y-4">
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
+                  className="block text-sm font-medium text-light-300 mb-1"
                 >
                   Tournament Name
                 </label>
@@ -166,7 +170,7 @@ const CreateTournament: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Weekend Warriors"
-                  className="w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full p-2 bg-dark-100 border border-dark-300 text-light-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-light-400"
                   required
                 />
               </div>
@@ -174,7 +178,7 @@ const CreateTournament: React.FC = () => {
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
+                  className="block text-sm font-medium text-light-300 mb-1"
                 >
                   Description (Optional)
                 </label>
@@ -183,19 +187,19 @@ const CreateTournament: React.FC = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="A description of your tournament and its rules..."
-                  className="w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent h-24"
+                  className="w-full p-2 bg-dark-100 border border-dark-300 text-light-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent h-24 placeholder:text-light-400"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="entryFee"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
+                  className="block text-sm font-medium text-light-300 mb-1"
                 >
                   Entry Fee (SOL)
                 </label>
                 <div className="relative">
-                  <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                  <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-secondary-400" />
                   <input
                     type="number"
                     id="entryFee"
@@ -205,7 +209,7 @@ const CreateTournament: React.FC = () => {
                     }
                     min="0.001"
                     step="0.001"
-                    className="w-full pl-10 p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full pl-10 p-2 bg-dark-100 border border-dark-300 text-light-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-light-400"
                     required
                   />
                 </div>
@@ -215,19 +219,19 @@ const CreateTournament: React.FC = () => {
                 <div>
                   <label
                     htmlFor="startDate"
-                    className="block text-sm font-medium text-neutral-700 mb-1"
+                    className="block text-sm font-medium text-light-300 mb-1"
                   >
                     Start Date
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-secondary-400" />
                     <input
                       type="date"
                       id="startDate"
                       value={startDate || tomorrowFormatted}
                       onChange={(e) => setStartDate(e.target.value)}
                       min={new Date().toISOString().slice(0, 10)}
-                      className="w-full pl-10 p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full pl-10 p-2 bg-dark-100 border border-dark-300 text-light-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-light-400"
                       required
                     />
                   </div>
@@ -236,18 +240,18 @@ const CreateTournament: React.FC = () => {
                 <div>
                   <label
                     htmlFor="startTime"
-                    className="block text-sm font-medium text-neutral-700 mb-1"
+                    className="block text-sm font-medium text-light-300 mb-1"
                   >
                     Start Time
                   </label>
                   <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-secondary-400" />
                     <input
                       type="time"
                       id="startTime"
                       value={startTime || defaultStartTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full pl-10 p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full pl-10 p-2 bg-dark-100 border border-dark-300 text-light-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-light-400"
                       required
                     />
                   </div>
@@ -257,12 +261,12 @@ const CreateTournament: React.FC = () => {
               <div>
                 <label
                   htmlFor="duration"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
+                  className="block text-sm font-medium text-light-300 mb-1"
                 >
                   Duration (Hours)
                 </label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-secondary-400" />
                   <input
                     type="number"
                     id="duration"
@@ -272,11 +276,11 @@ const CreateTournament: React.FC = () => {
                     }
                     min="1"
                     max="168"
-                    className="w-full pl-10 p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full pl-10 p-2 bg-dark-100 border border-dark-300 text-light-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-light-400"
                     required
                   />
                 </div>
-                <p className="text-sm text-neutral-500 mt-1">
+                <p className="text-sm text-light-400 mt-1">
                   Maximum duration: 168 hours (7 days)
                 </p>
               </div>
@@ -285,12 +289,12 @@ const CreateTournament: React.FC = () => {
                 <div>
                   <label
                     htmlFor="maxUsers"
-                    className="block text-sm font-medium text-neutral-700 mb-1"
+                    className="block text-sm font-medium text-light-300 mb-1"
                   >
                     Max Participants
                   </label>
                   <div className="relative">
-                    <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                    <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-secondary-400" />
                     <input
                       type="number"
                       id="maxUsers"
@@ -300,7 +304,7 @@ const CreateTournament: React.FC = () => {
                       }
                       min="2"
                       max="100"
-                      className="w-full pl-10 p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full pl-10 p-2 bg-dark-100 border border-dark-300 text-light-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-light-400"
                       required
                     />
                   </div>
@@ -309,7 +313,7 @@ const CreateTournament: React.FC = () => {
                 <div>
                   <label
                     htmlFor="maxTokensPerUser"
-                    className="block text-sm font-medium text-neutral-700 mb-1"
+                    className="block text-sm font-medium text-light-300 mb-1"
                   >
                     Max Tokens Per User
                   </label>
@@ -319,7 +323,7 @@ const CreateTournament: React.FC = () => {
                     onChange={(e) =>
                       setMaxTokensPerUser(parseInt(e.target.value))
                     }
-                    className="w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full p-2 bg-dark-100 border border-dark-300 text-light-100 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     required
                   >
                     <option value="1">1 token</option>
@@ -338,7 +342,7 @@ const CreateTournament: React.FC = () => {
               <button
                 type="button"
                 onClick={nextStep}
-                className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                className="px-6 py-2 rounded-md bg-gradient-to-r from-secondary-500 to-primary-500 text-light-100 font-medium hover:from-secondary-600 hover:to-primary-600 transition-all duration-300 shadow-lg"
               >
                 Next: Configure Portfolio
               </button>
@@ -346,10 +350,10 @@ const CreateTournament: React.FC = () => {
           </form>
         ) : (
           <div>
-            <h2 className="text-xl font-semibold mb-4">
+            <h2 className="text-xl font-semibold mb-4 text-light-100 bg-gradient-to-r from-secondary-400 to-primary-400 text-transparent bg-clip-text">
               Configure Your Portfolio
             </h2>
-            <p className="text-neutral-600 mb-6">
+            <p className="text-light-300 mb-6">
               As the tournament creator, you need to configure your own
               portfolio. Your entry fee will be added to the prize pool.
             </p>
@@ -367,7 +371,7 @@ const CreateTournament: React.FC = () => {
               <button
                 type="button"
                 onClick={prevStep}
-                className="px-6 py-2 border border-neutral-300 text-neutral-700 rounded-md hover:bg-neutral-50 transition-colors"
+                className="px-6 py-2 border border-dark-300 text-light-300 rounded-md hover:bg-dark-100 transition-colors"
               >
                 Back
               </button>
@@ -381,18 +385,18 @@ const CreateTournament: React.FC = () => {
                   portfolio.reduce((sum, token) => sum + token.weight, 0) !==
                     100
                 }
-                className={`px-6 py-2 rounded-md transition-colors ${
+                className={`px-6 py-2 rounded-md transition-all font-medium shadow-lg ${
                   isCreating ||
                   portfolio.length === 0 ||
                   portfolio.reduce((sum, token) => sum + token.weight, 0) !==
                     100
-                    ? "bg-neutral-300 text-neutral-500 cursor-not-allowed"
-                    : "bg-primary-600 text-white hover:bg-primary-700"
+                    ? "bg-dark-300 text-light-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-secondary-500 to-primary-500 text-light-100 hover:from-secondary-600 hover:to-primary-600"
                 }`}
               >
                 {isCreating ? (
                   <span className="flex items-center">
-                    <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-white rounded-full"></span>
+                    <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-light-100 rounded-full"></span>
                     Creating...
                   </span>
                 ) : (

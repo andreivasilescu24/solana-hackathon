@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
             <Link to="/" className="flex items-center space-x-2 mb-4">
               <Trophy className="h-8 w-8 text-primary-300" />
               <span className="text-xl font-bold text-light-200">
-                CryptoTournaments
+                Moon Arena
               </span>
             </Link>
             <p className="text-light-200 max-w-md">
@@ -121,7 +121,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-dark-200 mt-8 pt-8 text-center text-light-300">
-          <p>&copy; {currentYear} CryptoTournaments. All rights reserved.</p>
+          <p>&copy; {currentYear} MoonArena. All rights reserved.</p>
         </div>
       </div>
     </footer>
