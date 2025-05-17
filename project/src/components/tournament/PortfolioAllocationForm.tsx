@@ -1,6 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { TokenAllocation, TokenInfo, Tournament } from "../../types";
+import PortfolioChart from "./PortfolioChart";
+
+// Predefined token addresses and colors
+const TOKENS = {
+  SOL: {
+    id: "solana",
+    symbol: "SOL",
+    name: "Solana",
+    color: "#14F195",
+    current_price: 142.5,
+    price_change_percentage_24h: 2.3,
+  },
+  ETH: {
+    id: "ethereum",
+    symbol: "ETH",
+    name: "Ethereum",
+    color: "#627EEA",
+    current_price: 3245.8,
+    price_change_percentage_24h: -1.2,
+  },
+  BTC: {
+    id: "bitcoin",
+    symbol: "BTC",
+    name: "Bitcoin",
+    color: "#F7931A",
+    current_price: 64250,
+    price_change_percentage_24h: 0.8,
+  },
+  BNB: {
+    id: "binancecoin",
+    symbol: "BNB",
+    name: "Binance Coin",
+    color: "#F3BA2F",
+    current_price: 605.2,
+    price_change_percentage_24h: 1.1,
+  },
+};
 
 interface PortfolioAllocationFormProps {
   tournament: Tournament;
@@ -36,73 +73,7 @@ const PortfolioAllocationForm: React.FC<PortfolioAllocationFormProps> = ({
         // Mock data for now
         await new Promise((resolve) => setTimeout(resolve, 800));
 
-        const mockTokens: TokenInfo[] = [
-          {
-            id: "bitcoin",
-            symbol: "BTC",
-            name: "Bitcoin",
-            image: "",
-            current_price: 64250,
-            price_change_percentage_24h: 0.8,
-          },
-          {
-            id: "ethereum",
-            symbol: "ETH",
-            name: "Ethereum",
-            image: "",
-            current_price: 3245.8,
-            price_change_percentage_24h: -1.2,
-          },
-          {
-            id: "solana",
-            symbol: "SOL",
-            name: "Solana",
-            image: "",
-            current_price: 142.5,
-            price_change_percentage_24h: 2.3,
-          },
-          {
-            id: "cardano",
-            symbol: "ADA",
-            name: "Cardano",
-            image: "",
-            current_price: 0.45,
-            price_change_percentage_24h: -0.5,
-          },
-          {
-            id: "binancecoin",
-            symbol: "BNB",
-            name: "Binance Coin",
-            image: "",
-            current_price: 605.2,
-            price_change_percentage_24h: 1.1,
-          },
-          {
-            id: "ripple",
-            symbol: "XRP",
-            name: "XRP",
-            image: "",
-            current_price: 0.52,
-            price_change_percentage_24h: -2.7,
-          },
-          {
-            id: "polkadot",
-            symbol: "DOT",
-            name: "Polkadot",
-            image: "",
-            current_price: 6.8,
-            price_change_percentage_24h: 3.2,
-          },
-          {
-            id: "dogecoin",
-            symbol: "DOGE",
-            name: "Dogecoin",
-            image: "",
-            current_price: 0.12,
-            price_change_percentage_24h: 5.4,
-          },
-        ];
-
+        const mockTokens: TokenInfo[] = Object.values(TOKENS);
         setTokens(mockTokens);
       } catch (err) {
         console.error("Failed to fetch tokens:", err);
@@ -146,6 +117,7 @@ const PortfolioAllocationForm: React.FC<PortfolioAllocationFormProps> = ({
         name: newToken.name,
         price: newToken.current_price,
         change24h: newToken.price_change_percentage_24h,
+        color: newToken.color,
       },
     ]);
 
@@ -209,6 +181,13 @@ const PortfolioAllocationForm: React.FC<PortfolioAllocationFormProps> = ({
             Total: {totalWeight}%
           </span>
         </div>
+
+        {/* Portfolio Chart */}
+        {allocations.length > 0 && (
+          <div className="mb-6">
+            <PortfolioChart allocations={allocations} />
+          </div>
+        )}
 
         {allocations.length === 0 ? (
           <p className="text-light-300 text-center py-4">
@@ -304,7 +283,7 @@ const PortfolioAllocationForm: React.FC<PortfolioAllocationFormProps> = ({
                 : "bg-dark-100 text-light-300 cursor-not-allowed"
             }`}
           >
-            Join Tournament
+            {tournament.id === "new-tournament" ? "Create Tournament" : "Join Tournament"}
           </button>
         </div>
       </div>

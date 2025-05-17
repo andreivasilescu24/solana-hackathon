@@ -97,7 +97,7 @@ const Navbar: React.FC = () => {
               <Button>Dashboard</Button>
             </Link>
           ) : (
-            <Button onClick={() => login()}>Sign In with Twitter</Button>
+            <Button onClick={() => login()}>Sign In</Button>
           )}
         </div>
 
@@ -149,7 +149,7 @@ const Navbar: React.FC = () => {
               </Link>
             ) : (
               <Button onClick={() => login()} className="w-full">
-                Sign In with Twitter
+                Sign In
               </Button>
             )}
           </nav>

@@ -98,6 +98,7 @@ describe("portfolio-tournaments", () => {
     .portfolioTournaments as Program<PortfolioTournaments>;
   const provider = anchor.AnchorProvider.env();
   const user = provider.wallet;
+  console.log("User:", user.publicKey.toString());
   const id = new anchor.BN(3);
 
   const registrationUser1 = anchor.web3.Keypair.generate();
@@ -181,15 +182,59 @@ describe("portfolio-tournaments", () => {
   );
 
   it("Initialize platform ", async () => {
-    await program.methods
-      .initPlatform()
-      .accountsPartial({
-        platformAuthority: platformAuthorityPda[0],
-        authority: user.publicKey,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([user.payer])
-      .rpc();
+    try {
+      console.log("\nInitializing platform with:");
+      console.log("Program ID:", program.programId.toString());
+      console.log(
+        "Platform Authority PDA:",
+        platformAuthorityPda[0].toString()
+      );
+      console.log("Your wallet:", user.publicKey.toString());
+
+      // Get the PDA account info before initialization
+      const accountBefore = await provider.connection.getAccountInfo(
+        platformAuthorityPda[0]
+      );
+      console.log(
+        "\nPDA account before init:",
+        accountBefore ? "Exists" : "Doesn't exist"
+      );
+
+      const tx = await program.methods
+        .initPlatform()
+        .accountsPartial({
+          platformAuthority: platformAuthorityPda[0],
+          authority: user.publicKey,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([user.payer])
+        .rpc();
+
+      // Get the PDA account info after initialization
+      const accountAfter = await provider.connection.getAccountInfo(
+        platformAuthorityPda[0]
+      );
+      console.log(
+        "\nPDA account after init:",
+        accountAfter ? "Exists" : "Doesn't exist"
+      );
+      if (accountAfter) {
+        console.log("Account owner:", accountAfter.owner.toString());
+        console.log("Account data length:", accountAfter.data.length, "bytes");
+      }
+
+      console.log("\n✅ Platform initialized on devnet!");
+      console.log("Transaction signature:", tx);
+      console.log(
+        `View on Solana Explorer: https://explorer.solana.com/tx/${tx}?cluster=devnet`
+      );
+      console.log(
+        `View on Solscan: https://solscan.io/tx/${tx}?cluster=devnet`
+      );
+    } catch (error) {
+      console.error("Error initializing platform:", error);
+      throw error;
+    }
   });
 
   it("Creates tournament", async () => {
@@ -197,8 +242,6 @@ describe("portfolio-tournaments", () => {
     const now = Math.floor(Date.now() / 1000);
     startTime = new anchor.BN(now + 3); // Start a few seconds in future
     endTime = new anchor.BN(now + 10); // 5 minutes later
-
-    console.log(now, startTime.toString(), endTime.toString());
 
     console.log("Pub key: ", user.publicKey.toString());
 
@@ -295,6 +338,12 @@ describe("portfolio-tournaments", () => {
         LAMPORTS_PER_SOL,
       "SOL"
     );
+
+    console.log(
+      "Creator balance before: ",
+      (await provider.connection.getBalance(user.publicKey)) / LAMPORTS_PER_SOL
+    );
+
     console.log(
       "Balance for vault before: ",
       (await provider.connection.getBalance(vaultPda)) / LAMPORTS_PER_SOL,
@@ -389,7 +438,7 @@ describe("portfolio-tournaments", () => {
       " PNL: ",
       pnlCreator
     );
-    console.log("Winner public key: ", winnerPublicKey?.toBase58());
+    console.log("🟢 Winner public key: ", winnerPublicKey?.toBase58());
 
     await program.methods
       .finalizeTournament(winnerPublicKey)
@@ -409,12 +458,6 @@ describe("portfolio-tournaments", () => {
     assert.deepEqual(winner?.toBase58(), winnerPublicKey.toBase58());
 
     console.log(
-      "Balance for vault after: ",
-      (await provider.connection.getBalance(vaultPda)) / LAMPORTS_PER_SOL,
-      "SOL"
-    );
-
-    console.log(
       "Balance for user 1 after: ",
       (await provider.connection.getBalance(registrationUser1.publicKey)) /
         LAMPORTS_PER_SOL,
@@ -424,6 +467,17 @@ describe("portfolio-tournaments", () => {
       "Balance for user 2 after: ",
       (await provider.connection.getBalance(registrationUser2.publicKey)) /
         LAMPORTS_PER_SOL,
+      "SOL"
+    );
+
+    console.log(
+      "Creator balance before: ",
+      (await provider.connection.getBalance(user.publicKey)) / LAMPORTS_PER_SOL
+    );
+
+    console.log(
+      "Balance for vault after: ",
+      (await provider.connection.getBalance(vaultPda)) / LAMPORTS_PER_SOL,
       "SOL"
     );
 

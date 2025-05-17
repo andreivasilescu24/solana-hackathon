@@ -190,32 +190,20 @@ export const TournamentProvider = ({ children }: TournamentProviderProps) => {
   ): Promise<void> => {
     try {
       setIsLoading(true);
+      setError(null);
 
-      // Get current user from local storage (mock for demo)
-      const userString = localStorage.getItem("user");
-      if (!userString) {
-        throw new Error("Not authenticated");
-      }
-      const user = JSON.parse(userString);
-
-      // In a real implementation, this would call the Solana program
-      // Simulate API call delay
+      // Simulate API delay for realism
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Check if tournament exists
-      const tournament = tournaments.find((t) => t.id === tournamentId);
-      if (!tournament) {
-        throw new Error("Tournament not found");
-      }
+      // For demo, create a mock user if none exists
+      const mockUser = {
+        id: "demo-user-" + Math.random().toString(36).substring(2, 6),
+        address: "demo-wallet-address",
+      };
 
-      // Check if tournament is still open for registration
-      if (tournament.startTime < Date.now()) {
-        throw new Error("Tournament registration is closed");
-      }
-
-      // Create user portfolio
+      // Create user portfolio with the provided weights
       const newPortfolio: UserPortfolio = {
-        user: user.id,
+        user: mockUser.id,
         tournament: tournamentId,
         weights: portfolio,
         performance: 0, // Initial performance is 0%
@@ -230,10 +218,17 @@ export const TournamentProvider = ({ children }: TournamentProviderProps) => {
           t.id === tournamentId ? { ...t, currentUsers: t.currentUsers + 1 } : t
         )
       );
+
+      // For demo purposes, always save to localStorage
+      const existingPortfolios = JSON.parse(localStorage.getItem("userPortfolios") || "[]");
+      localStorage.setItem(
+        "userPortfolios",
+        JSON.stringify([...existingPortfolios, newPortfolio])
+      );
+
     } catch (error) {
-      console.error("Failed to join tournament:", error);
-      setError("Failed to join tournament. Please try again later.");
-      throw error;
+      console.error("Error in demo join tournament:", error);
+      setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }

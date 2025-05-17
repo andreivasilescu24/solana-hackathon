@@ -7,7 +7,8 @@ pub mod state;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("7xaAXMNqwo3wCmTawLKchSbwZJchTkcnFxb1nLHnbg4u");
+declare_id!("7xaAXMNqwo3wCmTawLKchSbwZJchTkcnFxb1nLHnbg4u"); // LOCALNET ID
+// declare_id!("9aQyw4VwZHRYH7Hu6QENQbeB8MQ3t9skfjCWqKvUGkpX"); // DEVNET ID
 
 #[program]
 pub mod portfolio_tournaments {

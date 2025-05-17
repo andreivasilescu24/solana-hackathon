@@ -7,6 +7,8 @@ import {
   Clock,
   Shield,
   Twitter,
+  Wallet,
+  LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -39,11 +41,10 @@ const Home: React.FC = () => {
         <div className="container mx-auto px-4 py-16 relative">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary-400 via-light-100 to-accent-400 text-transparent bg-clip-text">
-              Compete in Crypto Trading Tournaments
+              Compete in Crypto Portfolio Tournaments
             </h1>
             <p className="text-xl text-light-300 mb-8">
-              Test your trading skills, compete with others, and win prizes in
-              our crypto trading tournaments.
+              Test your market prediction and portfolio management skills, compete with others, and win prizes by taking part in the tournaments.
             </p>
             <button
               onClick={handleGetStarted}
@@ -62,8 +63,12 @@ const Home: React.FC = () => {
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-light-100"></div>
               ) : (
                 <>
-                  <Twitter className="mr-2 h-5 w-5" />
-                  {isAuthenticated ? "Go to Dashboard" : "Sign in with Twitter"}
+                  {isAuthenticated ? (
+                    <LayoutDashboard className="mr-2 h-5 w-5 text-light-100" />
+                  ) : (
+                    <Wallet className="mr-2 h-5 w-5" />
+                  )}
+                  {isAuthenticated ? "Go to Dashboard" : "Connect & Enter the Arena"}
                   {!isAuthenticated && <ArrowRight className="ml-2 h-5 w-5" />}
                 </>
               )}
@@ -81,7 +86,7 @@ const Home: React.FC = () => {
                 Win Prizes
               </h3>
               <p className="text-light-300">
-                Compete for real crypto prizes in our trading tournaments.
+                Compete for real crypto prizes in our portfolio tournaments.
               </p>
             </div>
 
@@ -94,7 +99,7 @@ const Home: React.FC = () => {
                 Track Performance
               </h3>
               <p className="text-light-300">
-                Monitor your trading performance and portfolio in real-time.
+                Monitor your PnL and portfolio in real-time.
               </p>
             </div>
 
@@ -104,7 +109,7 @@ const Home: React.FC = () => {
                 <Clock className="h-6 w-6 text-accent-400" />
               </div>
               <h3 className="text-lg font-semibold text-light-100 mb-2">
-                Time-based Rounds
+                Time-based Tournaments
               </h3>
               <p className="text-light-300">
                 Participate in tournaments with different durations and

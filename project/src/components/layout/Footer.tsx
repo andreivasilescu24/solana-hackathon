@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
               </span>
             </Link>
             <p className="text-light-200 max-w-md">
-              Compete in crypto trading tournaments to showcase your portfolio
+              Compete in crypto portfolio tournaments to showcase your portfolio
               management skills and win prizes.
             </p>
             <div className="flex space-x-4 mt-6">
